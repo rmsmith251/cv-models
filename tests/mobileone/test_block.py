@@ -52,7 +52,7 @@ def test_mobileone_block(inputs: list[int], expected_size: int):
     ).to(DEVICE)
     y = model.forward(x)
     assert list(y.shape) == [batch_size, out_channels, expected_size, expected_size]
-    y = model(x)
+    y = model.predict(x)
     assert list(y.shape) == [batch_size, out_channels, expected_size, expected_size]
     # When calling the model, we reparametrize the layers into a single layer for inference
     assert model.reparam_conv is not None
