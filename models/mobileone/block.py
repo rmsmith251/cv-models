@@ -1,11 +1,25 @@
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import Optional
+
 import torch
 import torch.nn as nn
-from abc import abstractmethod
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+
+def fuse_kernel_bn(
+    kernel: torch.Tensor, batchnorm: torch.Tensor
+) -> tuple[torch.Tensor]:
+    running_mean = batchnorm.running_mean
+    running_var = batchnorm.running_var
+    gamma = batchnorm.weight
+    beta = batchnorm.bias
+    eps = batchnorm.eps
+    std = (running_var + eps).sqrt()
+    t = (gamma / std).reshape(-1, 1, 1, 1)
+    return kernel * t, beta - running_mean * gamma / std
 
 
 class BaseRepBranch(nn.Module):
@@ -62,22 +76,14 @@ class BaseRepBranch(nn.Module):
 
         return self._id_tensor
 
-    def fuse_bn(self) -> tuple[torch.Tensor, torch.Tensor]:
+    def fuse(self) -> tuple[torch.Tensor, torch.Tensor]:
         """
         The following implementation is adapted from Apple's MobileOne implementation
         https://github.com/apple/ml-mobileone/blob/main/mobileone.py#L219
         """
         if self.ignore:
             return 0, 0
-        kernel = self.id_tensor()
-        running_mean = self.batchnorm.running_mean
-        running_var = self.batchnorm.running_var
-        gamma = self.batchnorm.weight
-        beta = self.batchnorm.bias
-        eps = self.batchnorm.eps
-        std = (running_var + eps).sqrt()
-        t = (gamma / std).reshape(-1, 1, 1, 1)
-        return kernel * t, beta - running_mean * gamma / std
+        return fuse_kernel_bn(self.id_tensor(), self.batchnorm)
 
     @abstractmethod
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
@@ -158,11 +164,6 @@ class ConvBranch(BaseRepBranch):
             device=self.device,
         )
 
-    def update_weights(self, kernel: torch.Tensor, bias: torch.Tensor) -> None:
-        self.conv.weight.data = kernel
-        if self.bias:
-            self.conv.bias.data = bias
-
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         if self.ignore:
             return 0
@@ -171,6 +172,12 @@ class ConvBranch(BaseRepBranch):
 
 
 class MobileOneBlock(nn.Module):
+    """
+    PyTorch implementation of Apple's MobileOne Blocks
+
+    https://arxiv.org/pdf/2206.04040.pdf
+    """
+
     def __init__(
         self,
         in_channels: int,
@@ -183,6 +190,8 @@ class MobileOneBlock(nn.Module):
         bias: bool = True,
         num_conv_branches: int = 1,
         device: str | torch.device = "cpu",
+        ignore_skip: bool = False,
+        ignore_scale: bool = False,
     ):
         super(MobileOneBlock, self).__init__()
         self.in_channels = in_channels
@@ -195,12 +204,16 @@ class MobileOneBlock(nn.Module):
         self.bias = bias
         self.num_conv_branches = num_conv_branches
         self.device = device
+        self.ignore_skip = ignore_skip or not (
+            self.out_channels == self.in_channels and self.stride == 1
+        )
+        self.ignore_scale = ignore_scale or (self.kernel_size <= 1)
 
         self.skip = SkipBranch(
             in_channels=self.in_channels,
             out_channels=self.out_channels,
             num_features=self.in_channels,
-            ignore=not (self.out_channels == self.in_channels and self.stride == 1),
+            ignore=self.ignore_skip,
             device=device,
         )
         self.scale = ConvBranch(
@@ -213,7 +226,7 @@ class MobileOneBlock(nn.Module):
             dilation=self.dilation,
             groups=self.groups,
             bias=self.bias,
-            ignore=self.kernel_size <= 1,
+            ignore=self.ignore_scale,
             device=device,
         )
         convs = [
@@ -233,28 +246,40 @@ class MobileOneBlock(nn.Module):
             for _ in range(self.num_conv_branches)
         ]
         self.convs = nn.ModuleList(convs)
-        self.reparam_conv = None
+        self.reparam_conv: nn.Conv2d | None = None
         self.activation = nn.ReLU()
+
+    def training_forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        skip = self.skip(inputs)
+        scale = self.scale(inputs)
+        out = skip + scale
+        for conv in self.convs:
+            out += conv(inputs)
+
+        return self.activation(out)
+
+    def inference_forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        if self.reparam_conv is None:
+            self.reparametrize()
+        with torch.no_grad():
+            return self.activation(self.reparam_conv(inputs))
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         with torch.autocast(DEVICE, dtype=torch.float16):
-            skip = self.skip(inputs)
-            scale = self.scale(inputs)
-            out = skip + scale
-            for conv in self.convs:
-                out += conv(inputs)
+            if self.training:
+                return self.training_forward(inputs)
+            else:
+                return self.inference_forward(inputs)
 
-            return self.activation(out)
-
-    def fuse_bn(self) -> tuple[torch.Tensor, torch.Tensor]:
-        scale_kernel, scale_bias = self.scale.fuse_bn()
+    def fuse(self) -> tuple[torch.Tensor, torch.Tensor]:
+        scale_kernel, scale_bias = self.scale.fuse()
         if isinstance(scale_kernel, torch.Tensor):
             pad = self.kernel_size // 2
             scale_kernel = nn.functional.pad(scale_kernel, [pad, pad, pad, pad])
-        skip_kernel, skip_bias = self.skip.fuse_bn()
+        skip_kernel, skip_bias = self.skip.fuse()
         conv_kernel, conv_bias = 0, 0
         for conv in self.convs:
-            kernel, bias = conv.fuse_bn()
+            kernel, bias = conv.fuse()
             conv_kernel += kernel
             conv_bias += bias
         return (
@@ -264,24 +289,21 @@ class MobileOneBlock(nn.Module):
 
     def reparametrize(self) -> None:
         if self.reparam_conv is None:
-            kernel, bias = self.fuse_bn()
-            self.reparam_conv = ConvBranch(
+            kernel, bias = self.fuse()
+            self.reparam_conv = nn.Conv2d(
                 in_channels=self.in_channels,
                 out_channels=self.out_channels,
-                num_features=self.out_channels,
                 kernel_size=self.kernel_size,
                 stride=self.stride,
                 padding=self.padding,
                 dilation=self.dilation,
                 groups=self.groups,
                 bias=self.bias,
-                ignore=False,
                 device=self.device,
             )
-            self.reparam_conv.update_weights(kernel, bias)
+            self.reparam_conv.weight.data = kernel
+            if self.bias:
+                self.reparam_conv.bias.data = bias
 
-    def __call__(self, inputs: torch.Tensor) -> torch.Tensor:
-        if self.reparam_conv is None:
-            self.reparametrize()
-        with torch.no_grad(), torch.autocast(self.device, dtype=torch.float16):
-            return self.activation(self.reparam_conv(inputs))
+    def predict(self, inputs: torch.Tensor) -> torch.Tensor:
+        return self.inference_forward(inputs)
