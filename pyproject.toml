@@ -1,5 +1,5 @@
 [project]
-name = "models"
+name = "vision"
 authors = [
     {name = "Ryan Smith", email = "ryanmsmith251@gmail.com"}
 ]
@@ -8,7 +8,7 @@ requires-python = ">=3.9"
 classifiers = ["License :: OSI Approved :: MIT License"]
 version = "0.0.0"
 
-dependencies = ["torch", "torchvision", "pillow"]
+dependencies = ["torch", "torchvision", "pillow", "opencv-python"]
 
 [project.optional-dependencies]
 dev = [
@@ -24,7 +24,7 @@ dev = [
 line-length = 88
 
 [tool.mypy]
-files = "models/"
+files = "vision/"
 check_untyped_defs = "true"
 ignore_missing_imports = "true"
 

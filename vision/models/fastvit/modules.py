@@ -3,8 +3,8 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
-from models.components.conv_ffn import ConvFFN
-from models.mobileone.block import MobileOneBlock, fuse_kernel_bn
+from vision.models.components.conv_ffn import ConvFFN
+from vision.models.mobileone.block import MobileOneBlock, fuse_kernel_bn
 
 
 class Stem(nn.Module):

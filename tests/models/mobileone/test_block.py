@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from models.mobileone.block import MobileOneBlock
+from vision.models.mobileone.block import MobileOneBlock
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
