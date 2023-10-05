@@ -1,0 +1,1 @@
+from vision.models.rcnn.mask_rcnn import MaskRCNN
