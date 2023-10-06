@@ -1,7 +1,7 @@
 # Benchmark data
 
 ## Model Latency Table in ms
-Tests are run on the file at `tests/assets/person.jpg` which contains a single person.
+Tests are run on the file at `tests/assets/person.jpg` which contains a single person. The image size is 540x360 and the model picks the person up with no other predictions.
 
 Note: 2080 Super runs out of memory past bs=20
 | GPU | CPU | OS | Model | bs=1 | bs=2 | bs=4 | bs=8 | bs=16 | bs=24 |
