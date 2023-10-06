@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import torch
 
-from vision.models.base import BaseTrainer
-from vision.models.fastvit.modules import Stage, Stem
+from models.vision.base import BaseTrainer
+from models.vision.fastvit.modules import Stage, Stem
 
 
 class FastViT(BaseTrainer):

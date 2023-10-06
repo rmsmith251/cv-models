@@ -1,10 +1,10 @@
 import pytest
 
-from vision.models import MaskRCNN
-from vision.utils import ImageConverter
+from models.utils import ImageConverter
+from models.vision import MaskRCNN
 
 
-@pytest.mark.parametrize("batch_size", [1, 2, 4, 8, 16, 24])
+@pytest.mark.parametrize("batch_size", [1, 2, 4, 8, 16, 20])
 def test_mask_rcnn(benchmark, batch_size: int):
     img = ImageConverter(from_file="tests/assets/person.jpg").to_pil()
     model = MaskRCNN(device="cuda")

@@ -5,8 +5,8 @@ from abc import abstractmethod
 import numpy as np
 import torch
 
-from vision.tracking.types import NUMPY_TYPES, TENSOR_TYPES, TrackedObject
-from vision.tracking.utils import vectorized_bbox_iou, vectorized_bbox_iou_torch
+from models.tracking.types import NUMPY_TYPES, TENSOR_TYPES, TrackedObject
+from models.tracking.utils import vectorized_bbox_iou, vectorized_bbox_iou_torch
 
 
 class BaseTracker:

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from shapely.geometry import Polygon
 
-from vision.tracking.utils import vectorized_bbox_iou
+from models.tracking.utils import vectorized_bbox_iou
 
 
 def bbox_to_shapely(arr):

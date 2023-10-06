@@ -4,7 +4,7 @@ import torch
 import torchvision
 from torchvision.models import detection
 
-from vision.models.base import BaseImageInferenceModel
+from models.vision.base import BaseImageInferenceModel
 
 TORCHVISION_ALIASES = {
     "mask-rcnn": detection.maskrcnn_resnet50_fpn,

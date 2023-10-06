@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 
-from vision.models.mobileone.block import MobileOneBlock
+from models.vision.mobileone.block import MobileOneBlock
 
 
 class PatchEmbed(nn.Module):

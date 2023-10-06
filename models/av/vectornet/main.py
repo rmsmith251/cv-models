@@ -14,7 +14,7 @@ class DataPoint:
     index: int
 
     @classmethod
-    def from_list(self, data: list, device: torch.device | str = "cpu") -> DataPoint:
+    def from_list(self, data: list) -> DataPoint:
         return DataPoint(
             start_pos=torch.tensor(data[0]),
             end_pos=torch.tensor(data[1]),
@@ -30,7 +30,7 @@ class NodeEncoder(nn.Module):
         out_features: int,
         bias: bool = True,
         device: torch.device | str = "cpu",
-    ):
+    ) -> None:
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -53,8 +53,13 @@ class NodeEncoder(nn.Module):
         return self.relu(x)
 
 
+class SubGraph(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+
+
 class GraphNeuralNetwork(nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
@@ -72,7 +77,7 @@ class VectorNet(nn.Module):
         dilation: int = 1,
         bias: bool = True,
         device: torch.device | str = "cpu",
-    ):
+    ) -> None:
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features

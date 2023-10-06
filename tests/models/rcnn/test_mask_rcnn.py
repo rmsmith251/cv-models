@@ -1,5 +1,5 @@
-from vision.models import MaskRCNN
-from vision.utils import ImageConverter
+from models.utils import ImageConverter
+from models.vision import MaskRCNN
 
 
 def test_mask_rcnn():

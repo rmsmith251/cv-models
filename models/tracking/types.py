@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 
-from vision.tracking.utils import vectorized_bbox_iou, vectorized_bbox_iou_torch
+from models.tracking.utils import vectorized_bbox_iou, vectorized_bbox_iou_torch
 
 COORDINATE_PAIR = tuple[float, float]
 POINTS = tuple[float, float, float, float]

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from vision.utils import images
+from models.utils import images
 
 np_image = np.ones((300, 300, 3), dtype=np.uint8)
 pil_image = Image.new("RGB", (300, 300))

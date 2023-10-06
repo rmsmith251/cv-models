@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from vision.tracking.base import BaseTracker
-from vision.tracking.types import NUMPY_TYPES, TENSOR_TYPES
+from models.tracking.base import BaseTracker
+from models.tracking.types import NUMPY_TYPES, TENSOR_TYPES
 
 
 class IoU(BaseTracker):

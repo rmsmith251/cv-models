@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 from PIL import Image
 
-from vision.utils import ImageConverter
+from models.utils import ImageConverter
 
 IMAGE_TYPES = Union[
     np.ndarray, List[np.ndarray], List[Image.Image], torch.Tensor, List[torch.Tensor]

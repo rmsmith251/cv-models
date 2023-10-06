@@ -1,6 +1,6 @@
 import torch
 
-from vision.models.vectornet import VectorNet
+from models.vision.vectornet import VectorNet
 
 
 def test_VectorNet():
