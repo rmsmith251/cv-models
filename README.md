@@ -1,6 +1,6 @@
 # cv-models
 
-This repo is a collection of various models that I've implemented in PyTorch. The intention is for this to be for practice but I am hoping to expand this to support a variety of model types.
+This repo is a collection of various models that I've implemented in PyTorch. There are many great implementations of these models already, this is just a practice repo for me but feel free to contribute.
 
 ## Development
 To get started, clone the repo with
@@ -15,10 +15,10 @@ pre-commit install
 
 Or you can install directly from GitHub using
 ```bash
-pip install 'vision'@git+https://github.com/rmsmith251/cv-models
+pip install 'models'@git+https://github.com/rmsmith251/cv-models
 
 # To install with developer packages
-pip install 'vision[dev]'@git+https://github.com/rmsmith251/cv-models
+pip install 'models[dev]'@git+https://github.com/rmsmith251/cv-models
 ```
 
 ## Benchmarks
